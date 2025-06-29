@@ -1,5 +1,4 @@
-name: CI – IRIS Homework
-
+name: CI – IRIS Week-4
 on:
   push:
     branches: [dev]
