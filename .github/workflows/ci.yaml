@@ -1,17 +1,18 @@
-name: CI – IRIS Week-4          # ← shows up in the Actions tab
+name: CI – IRIS Week-4          # Appears in the Actions tab
 
 on:
+  # Run for every push to dev and for every PR targeting main
   push:
-    branches: [dev]             # every push on dev
+    branches: [dev]
   pull_request:
-    branches: [main]            # and every PR → main
+    branches: [main]
 
 jobs:
   tests:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣  Check out repo contents
+      # 1️⃣  Check out repository
       - uses: actions/checkout@v4
 
       # 2️⃣  Set up Python 3.10
@@ -19,18 +20,24 @@ jobs:
         with:
           python-version: "3.10"
 
-      # 3️⃣  Install dependencies (upgrade pip first so wheels resolve cleanly)
+      # 3️⃣  Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools
           pip install -r requirements.txt
 
-      # 4️⃣  Run pytest and create report.md
+      # 4️⃣  Run pytest, capture output, and build Markdown report
       - name: Run pytest and capture report
+        env:
+          PYTHONPATH: ${{ github.workspace }}   # ensure repo root is on import path
         run: |
-          # Stream output to console *and* save to file
-          pytest -q | tee pytest_report.txt
-          # Build a Markdown snippet for the PR comment
+          pytest -q | tee pytest_report.txt          # stream + save
           echo "## 🧪 Pytest summary" > report.md
           cat pytest_report.txt >> report.md
 
+      # 5️⃣  Post the report as a PR / commit comment via CML
+      - name: Post CML comment
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}    # auto-provided by GitHub
+        run: |
+          npx cml@latest comment create --token $REPO_TOKEN report.md
